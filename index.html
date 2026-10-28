@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>رسالة النهارده لوزتي ❤️</title>
+
 <style>
 *{box-sizing:border-box}
 body{
@@ -26,21 +27,77 @@ h1{font-size:27px;color:#c04478;margin:12px 0}
  border-radius:20px;font-size:18px;line-height:2;
  white-space:pre-line;text-align:center
 }
-.date{font-size:13px;color:#a66b86;line-height:1.8}
+.date{font-size:13px;color:#a66b86;line-height:1.8;white-space:pre-line}
 .footer{font-size:13px;line-height:1.8;margin-top:22px;color:#b16b8b}
+.read-section{
+ margin-top:18px;padding:16px;background:#fff3f8;border-radius:18px
+}
+.read-section p{font-size:15px;line-height:1.8}
+.read-btn{
+ display:block;width:100%;margin:10px 0;padding:13px;
+ border:0;border-radius:14px;background:#c04478;color:white;
+ font-size:15px;cursor:pointer;transition:transform .2s,opacity .2s
+}
+.read-btn:active{transform:scale(.97)}
+.read-btn:disabled{opacity:.65;cursor:wait}
+#readStatus{
+ white-space:pre-line;font-size:14px;line-height:2;margin-top:12px
+}
 @keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes heartPop{
+ 0%{transform:scale(.5);opacity:.3}
+ 60%{transform:scale(1.3);opacity:1}
+ 100%{transform:scale(1);opacity:1}
+}
+.pop{animation:heartPop .45s ease}
 </style>
 </head>
+
 <body>
 <main class="card">
  <div class="heart">💗</div>
  <h1>وزتي، يا أجمل حاجة في دنيتي</h1>
  <div class="sub">كل يوم رسالة مخصوصة ليكي يا وزة 💌</div>
- <div class="message" id="message"></div>
+
+ <div class="message" id="message">جاري تحميل رسالة النهارده...</div>
  <div class="date" id="date"></div>
+
+ <div class="read-section">
+  <p>خلصتي قراءة رسالة النهارده يا وزتي؟ 💗</p>
+  <button class="read-btn" id="herRead">أنا وزتي ❤️ قريت الرسالة</button>
+  <button class="read-btn" id="myRead">أنا عبدالرحمن 💙 قريت الرسالة</button>
+  <div id="readStatus">جاري تحميل حالة القراءة...</div>
+ </div>
+
  <div class="footer">ربنا يخليكي ليا ويحفظك من كل شر يا حبيبتي 🤍</div>
 </main>
-<script>
+
+<script type="module">
+import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+  getFirestore, doc, setDoc, getDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+import {
+  getAuth, signInAnonymously
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4I4NviTS4pNo5hxksiGDr-2SiOVaj4AI",
+  authDomain: "zozo-41d24.firebaseapp.com",
+  projectId: "zozo-41d24",
+  storageBucket: "zozo-41d24.firebasestorage.app",
+  messagingSenderId: "872003176089",
+  appId: "1:872003176089:web:c9d522e470d6e7124b5a08",
+  measurementId: "G-HZRTXWPJSX"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
 const messages = [
 `يا وزتي يا حتة من قلبي ❤️
 أنا مش عارف أوصفلك إنتي بقيتي غالية عندي قد إيه، بس كل يوم بيعدي بحس إني محظوظ إن ربنا جمعني بيكي. ربنا يحفظك ليا ويفرح قلبك دايمًا ويبعد عنك كل زعل، ويخليني سبب في ضحكتك مش دمعتك. بحبك يا أجمل حاجة حصلتلي 💗`,
@@ -193,45 +250,148 @@ const messages = [
 const startDate = new Date(2026, 9, 16);
 
 function dayNumber(d) {
- return Math.floor(
-  Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000
- );
+  return Math.floor(
+    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) /
+    86400000
+  );
 }
 
 function getDailyIndex() {
- const today = new Date();
- const elapsed = Math.max(0, dayNumber(today) - dayNumber(startDate));
- return elapsed % messages.length;
+  const today = new Date();
+  const elapsed = Math.max(
+    0, dayNumber(today) - dayNumber(startDate)
+  );
+  return elapsed % messages.length;
+}
+
+function getDateKey() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function render() {
- const current = getDailyIndex();
+  const current = getDailyIndex();
 
- document.getElementById("message").textContent = messages[current];
- document.getElementById("date").textContent =
-  "رسالة النهارده رقم " + (current + 1) + " من " +
-  messages.length + " 💗\n" +
-  new Date().toLocaleDateString("ar-EG", {
-   year:"numeric", month:"long", day:"numeric"
-  });
+  document.getElementById("message").textContent =
+    messages[current];
+
+  document.getElementById("date").textContent =
+    "رسالة النهارده رقم " + (current + 1) +
+    " من " + messages.length + " 💗\n" +
+    new Date().toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
 }
+
+async function refreshReadStatus() {
+  const status = document.getElementById("readStatus");
+  const dateKey = getDateKey();
+
+  try {
+    const herDoc = await getDoc(
+      doc(db, "message_reads", `${dateKey}_her`)
+    );
+    const myDoc = await getDoc(
+      doc(db, "message_reads", `${dateKey}_me`)
+    );
+
+    status.textContent =
+      "حالة قراءة رسالة النهارده 💌\n" +
+      "وزتي: " +
+      (herDoc.exists() && herDoc.data().read
+        ? "❤️ قريتها"
+        : "لسه مسجلتش القراءة") +
+      "\nعبدالرحمن: " +
+      (myDoc.exists() && myDoc.data().read
+        ? "💙 قرأها"
+        : "لسه مسجلش القراءة");
+  } catch (error) {
+    console.error(error);
+    status.textContent =
+      "مش قادر أجيب حالة القراءة دلوقتي. جرّب تحدّث الصفحة.";
+  }
+}
+
+async function markAsRead(person, buttonId) {
+  const button = document.getElementById(buttonId);
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "جاري التسجيل... ❤️";
+
+  try {
+    const current = getDailyIndex();
+    const dateKey = getDateKey();
+
+    await setDoc(
+      doc(db, "message_reads", `${dateKey}_${person}`),
+      {
+        person,
+        messageNumber: current + 1,
+        read: true,
+        dateKey,
+        updatedAt: serverTimestamp()
+      }
+    );
+
+    button.textContent = "اتسجلت القراءة ❤️";
+    button.classList.add("pop");
+    await refreshReadStatus();
+  } catch (error) {
+    console.error(error);
+    button.textContent = originalText;
+    alert(
+      "التسجيل ما تمش. اتأكد من Firebase Rules وAuthentication واتصال الإنترنت."
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.getElementById("herRead").addEventListener(
+  "click", () => markAsRead("her", "herRead")
+);
+
+document.getElementById("myRead").addEventListener(
+  "click", () => markAsRead("me", "myRead")
+);
+
+async function startApp() {
+  render();
+
+  try {
+    await signInAnonymously(auth);
+    await refreshReadStatus();
+  } catch (error) {
+    console.error(error);
+    document.getElementById("readStatus").textContent =
+      "تعذر الاتصال بقاعدة البيانات. راجع إعدادات Firebase.";
+  }
+}
+
+startApp();
 
 function scheduleMidnightUpdate() {
- const now = new Date();
- const tomorrow = new Date(
-  now.getFullYear(),
-  now.getMonth(),
-  now.getDate() + 1,
-  0, 0, 1
- );
+  const now = new Date();
+  const tomorrow = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+    0, 0, 1
+  );
 
- setTimeout(() => {
-  render();
-  scheduleMidnightUpdate();
- }, tomorrow - now);
+  setTimeout(() => {
+    render();
+    refreshReadStatus();
+    scheduleMidnightUpdate();
+  }, tomorrow - now);
 }
 
-render();
 scheduleMidnightUpdate();
 </script>
 </body>
