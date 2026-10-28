@@ -36,10 +36,11 @@ h1{font-size:27px;color:#c04478;margin:12px 0}
 .read-btn{
  display:block;width:100%;margin:10px 0;padding:13px;
  border:0;border-radius:14px;background:#c04478;color:white;
- font-size:15px;cursor:pointer;transition:transform .2s,opacity .2s
+ font-size:15px;cursor:pointer;transition:transform .2s,opacity .2s;
+ line-height:1.8
 }
 .read-btn:active{transform:scale(.97)}
-.read-btn:disabled{opacity:.65;cursor:wait}
+.read-btn:disabled{opacity:.8;cursor:default}
 #readStatus{
  white-space:pre-line;font-size:14px;line-height:2;margin-top:12px
 }
@@ -288,28 +289,46 @@ function render() {
     });
 }
 
+// جلب حالة القراءة وتحديث الزرارين من Firebase
 async function refreshReadStatus() {
   const status = document.getElementById("readStatus");
+  const herButton = document.getElementById("herRead");
+  const myButton = document.getElementById("myRead");
   const dateKey = getDateKey();
 
   try {
-    const herDoc = await getDoc(
-      doc(db, "message_reads", `${dateKey}_her`)
-    );
-    const myDoc = await getDoc(
-      doc(db, "message_reads", `${dateKey}_me`)
-    );
+    const [herDoc, myDoc] = await Promise.all([
+      getDoc(doc(db, "message_reads", `${dateKey}_her`)),
+      getDoc(doc(db, "message_reads", `${dateKey}_me`))
+    ]);
+
+    const herRead = herDoc.exists() &&
+      herDoc.data().read === true;
+
+    const myRead = myDoc.exists() &&
+      myDoc.data().read === true;
+
+    herButton.textContent = herRead
+      ? "❤️ وزتي سجّلت قراءة رسالة النهارده ✅"
+      : "أنا وزتي ❤️ قريت الرسالة";
+
+    myButton.textContent = myRead
+      ? "💙 عبدالرحمن سجّل قراءة رسالة النهارده ✅"
+      : "أنا عبدالرحمن 💙 قريت الرسالة";
+
+    // الزرار المسجّل لا يحتاج إلى الضغط مرة ثانية اليوم
+    herButton.disabled = herRead;
+    myButton.disabled = myRead;
 
     status.textContent =
       "حالة قراءة رسالة النهارده 💌\n" +
       "وزتي: " +
-      (herDoc.exists() && herDoc.data().read
-        ? "❤️ قريتها"
-        : "لسه مسجلتش القراءة") +
+      (herRead ? "❤️ قريتها وسجّلت القراءة" :
+        "لسه مسجلتش القراءة") +
       "\nعبدالرحمن: " +
-      (myDoc.exists() && myDoc.data().read
-        ? "💙 قرأها"
-        : "لسه مسجلش القراءة");
+      (myRead ? "💙 قرأها وسجّل القراءة" :
+        "لسه مسجلش القراءة");
+
   } catch (error) {
     console.error(error);
     status.textContent =
@@ -319,8 +338,11 @@ async function refreshReadStatus() {
 
 async function markAsRead(person, buttonId) {
   const button = document.getElementById(buttonId);
-  const originalText = button.textContent;
 
+  // منع الضغط المتكرر أثناء حفظ البيانات
+  if (button.disabled) return;
+
+  const originalText = button.textContent;
   button.disabled = true;
   button.textContent = "جاري التسجيل... ❤️";
 
@@ -339,17 +361,21 @@ async function markAsRead(person, buttonId) {
       }
     );
 
-    button.textContent = "اتسجلت القراءة ❤️";
+    button.classList.remove("pop");
+    void button.offsetWidth;
     button.classList.add("pop");
+
+    // استرجاع الحالة المحفوظة من Firebase
     await refreshReadStatus();
+
   } catch (error) {
     console.error(error);
     button.textContent = originalText;
-    alert(
-      "التسجيل ما تمش. اتأكد من Firebase Rules وAuthentication واتصال الإنترنت."
-    );
-  } finally {
     button.disabled = false;
+
+    alert(
+      "التسجيل ما تمش. اتأكد من الإنترنت وإعدادات Firebase."
+    );
   }
 }
 
@@ -376,8 +402,10 @@ async function startApp() {
 
 startApp();
 
+// تحديث الرسالة وحالة القراءة عند بداية يوم جديد
 function scheduleMidnightUpdate() {
   const now = new Date();
+
   const tomorrow = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -385,9 +413,9 @@ function scheduleMidnightUpdate() {
     0, 0, 1
   );
 
-  setTimeout(() => {
+  setTimeout(async () => {
     render();
-    refreshReadStatus();
+    await refreshReadStatus();
     scheduleMidnightUpdate();
   }, tomorrow - now);
 }
